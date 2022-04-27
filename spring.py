@@ -1,30 +1,40 @@
-from PyPhysics import *
-
+import numpy as np
 import matplotlib.pyplot as plt
 
-
-class XSpring(Force1D):
-    def __init__(self, k=1):
-        self.k = k
-
-    def calc_force(self, particle):
-        return Point1D(- self.k * particle.r.x)
+from PyPhysics import *
 
 
-class ParticleOnSpring(Particle1D):
-    def __init__(self, r=Point1D(), v=Point1D(), spring_coefficient=1):
-        super().__init__(r, v, update_method='midpoint', force=XSpring(k=spring_coefficient))
+def spring_force(k, x):
+    return -k * x
 
-    def release(self, elapsed_time=0, time_step=0):
+
+# One Particle System
+class ParticleOnSpring(Particle):
+    def __init__(self, r, v, m, spring_coefficient=1):
+        super().__init__(r, v, 0, m)
+
+        self.spring_coefficient = spring_coefficient
+        self.a = self.calc_accel(self.r, self.v)
+
+    def calc_accel(self, r, v):
+        return spring_force(self.spring_coefficient, r) / self.m
+
+    def release(self, elapsed_time=0, time_step=0, method='euler'):
+
+        def f(r, v): return self.calc_accel(r, v)
+
+        ode = ODEIntegrator(f, method)
 
         time = 0
 
-        r_x, r_t = [self.r.x], [time]
+        r_x = [self.r[0]]
+        r_t = [time]
 
         while time <= elapsed_time:
 
-            self.update(time_step)
-            r_x.append(self.r.x)
+            self.r, self.v, self.a = ode.step(
+                self.r, self.v, self.a, time_step)
+            r_x.append(self.r[0])
 
             time += time_step
 
@@ -33,16 +43,14 @@ class ParticleOnSpring(Particle1D):
         return r_x, r_t
 
 
-r_0 = Point1D(10)
-v_0 = Point1D(0)
-
-spring1 = ParticleOnSpring(r=r_0, v=v_0, spring_coefficient=1)
+spring1 = ParticleOnSpring(
+    r=np.array([10.]), v=np.array([0.]), m=2, spring_coefficient=1)
 
 tau = 0.05
 
-s1_x, s1_t = spring1.release(100, time_step=tau)
+s1_x, s1_t = spring1.release(elapsed_time=100, time_step=tau, method='verlet')
 
-plt.plot(s1_t, s1_x, 'b.')
+plt.plot(s1_t, s1_x, 'b-')
 plt.xlabel("T (s)")
 plt.ylabel("X (m)")
 
