@@ -19,11 +19,10 @@ def force_air_resistance(v, drag_coefficient, area):
 # One Particle System
 class Baseball(Particle):
     def __init__(self, r, v, m):
-        super().__init__(r, v, 0, m)
+        super().__init__(r, v, m)
 
         self.area = 0.00426
         self.drag_coefficient = 0.40
-        self.a = self.calc_accel(self.r, self.v)
 
     def calc_accel(self, r, v):
         g = gravity_force(self.m)
@@ -33,7 +32,6 @@ class Baseball(Particle):
     def move(self, r, v):
         self.r = r
         self.v = v
-        self.a = self.calc_accel(self.r, self.v)
 
     def throw(self, time_step=0, method='euler'):
 
@@ -49,8 +47,8 @@ class Baseball(Particle):
 
         while self.r[1] >= 0:
 
-            self.r, self.v, self.a = ode.step(
-                self.r, self.v, self.a, time_step)
+            self.r, self.v = ode.step(
+                self.r, self.v, time_step)
 
             time += time_step
 
@@ -66,18 +64,30 @@ v_0 = np.array([1000., 1000.])
 
 ball1 = Baseball(r=r_0, v=v_0, m=1)
 
-tau = 0.1
+tau = 0.01
+
+ball1.move(r_0, v_0)
+b1_x, b1_y, b1_t = ball1.throw(time_step=tau, method='euler')
+plt.plot(b1_x, b1_y, '-', label='Euler')
 
 ball1.move(r_0, v_0)
 b1_x, b1_y, b1_t = ball1.throw(time_step=tau, method='midpoint')
-plt.plot(b1_x, b1_y, 'm-')
+plt.plot(b1_x, b1_y, '-', label='Midpoint')
 
-# ball1.move(r_0, v_0)
-# b1_x, b1_y, b1_t = ball1.throw(time_step=tau, method='verlet')
-# plt.plot(b1_x, b1_y, 'r-')
+ball1.move(r_0, v_0)
+b1_x, b1_y, b1_t = ball1.throw(time_step=tau, method='euler-cromer')
+plt.plot(b1_x, b1_y, '-', label='Euler-Cromer')
 
+ball1.move(r_0, v_0)
+b1_x, b1_y, b1_t = ball1.throw(time_step=tau, method='verlet')
+plt.plot(b1_x, b1_y, '-', label='Verlet')
+
+ball1.move(r_0, v_0)
+b1_x, b1_y, b1_t = ball1.throw(time_step=tau, method='rk4')
+plt.plot(b1_x, b1_y, '-', label='RK4')
 
 plt.xlabel("X (m)")
 plt.ylabel("Y (m)")
+plt.legend()
 plt.ylim(0)
 plt.show()
